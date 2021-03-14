@@ -406,7 +406,6 @@ static void add_list_files(const string& dirname, vector<string>* result) {
 
   CHECK(result != nullptr);
 
-
   std::unique_ptr<DIR, decltype(&closedir)> dir(opendir(dirname.c_str()), closedir);
 
   if (dir != nullptr) {
@@ -426,6 +425,36 @@ static void add_list_files(const string& dirname, vector<string>* result) {
       } else if (ent->d_type == DT_DIR) {
 
         add_list_files(dirname + OS_PATH_SEPARATOR + ent->d_name, result);
+
+      } else if (ent->d_type == DT_UNKNOWN) {
+
+        struct stat stbuf = {};
+
+        std::string tmp;
+
+        tmp.append(dirname.c_str());
+
+        tmp.push_back(OS_PATH_SEPARATOR);
+
+        tmp.append(ent->d_name);
+
+        stat(tmp.c_str(), &stbuf);
+
+        bool is_dir = S_ISDIR(stbuf.st_mode);
+
+        bool is_reg = S_ISREG(stbuf.st_mode);
+
+        if (is_dir) {
+
+            add_list_files(dirname + OS_PATH_SEPARATOR + ent->d_name, result);
+
+        }
+
+        if (is_reg) {
+
+            result->emplace_back(dirname + OS_PATH_SEPARATOR + ent->d_name);
+
+        }
 
       }
 
